@@ -72,7 +72,7 @@ void UART0_init(void)
     UART0->C2 = 0x00;
     /* 115200 Baud */
     UART0->BDH = 0x00;
-    UART0->BDL = 0x17;
+    UART0->BDL = 0x0B;
     /* Over Sampling Ratio = 16 */
     UART0->C4 = 0x0F;
     /* 8-bit data, no parity */
@@ -214,7 +214,7 @@ void optionLED(void)
 
 }
 
-}
+
 
 
 // Función para inicializar el ADC0
@@ -256,14 +256,14 @@ void optionADC(void)
 
 void optionKeypad(void)
 {
-    char c = "0";
+    char c = '0';
     char key;
     int code;
     int prevPressed = 0;
 
     UART0_puts("\r\nPress a key:\r\n");
 
-    while (c != "Q" && c != "q")
+    while (c != 'Q' && c != 'q')
     {
     	code = keypad_getkey();
     	//we detect the debounced rising edge of a key press
