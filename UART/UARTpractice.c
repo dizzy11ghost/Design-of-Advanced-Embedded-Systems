@@ -11,6 +11,8 @@ void UART0_puts(const char *str);
 void showMenu(void);
 void processCommand(char option);
 
+void delayMs( int ms);
+void delayUs( int us);
 void LED_init(void);
 void ADC0_init(void);
 void init_Buttons(void);
@@ -78,14 +80,14 @@ void UART0_init(void)
     /* 8-bit data, no parity */
     UART0->C1 = 0x00;
     /* Enable transmitter AND receiver */
-    UART0->C2 = 0x0C;
+    UART0->C2 = 0x2C;
     /* Enable clock for PORTA */
     SIM->SCGC5 |= 0x0200;
     /* PTA2 = UART0_TX */
     PORTA->PCR[2] = 0x0200;
     /* PTA1 = UART0_RX */
-    PORTA->PCR[1] = 0x0200;
-
+    PORTA->PCR[1] = 0x0200;Q
+Q
     //we enable NVIC (nested vector interrupt controller)interrupt for UART0 so reception is interrupt driven
     //friendly reminder: es el bloque de hardware en los microcontroladores con arquitectura ARM Cortex-M encargado de gestionar, priorizar y atender de forma rápida las interrupciones y excepciones
     NVIC_SetPriority(UART0_IRQn, 2);
@@ -214,7 +216,7 @@ void optionLED(void)
 
 }
 
-}
+
 
 
 // Función para inicializar el ADC0
@@ -256,14 +258,14 @@ void optionADC(void)
 
 void optionKeypad(void)
 {
-    char c = "0";
+    char c = '0';
     char key;
     int code;
     int prevPressed = 0;
 
     UART0_puts("\r\nPress a key:\r\n");
 
-    while (c != "Q" && c != "q")
+    while (c != 'Q' && c != 'q')
     {
     	code = keypad_getkey();
     	//we detect the debounced rising edge of a key press
@@ -420,6 +422,18 @@ void processCommand(char option)
 	            UART0_puts("select an option:\r\n");
 	            break;
 	    }
+}
+
+
+void delayMs(int ms)
+{
+    for(int i=0;i<ms;i++)
+        for(volatile int j=0;j<48000;j++);
+}
+
+void delayUs(int us)
+{
+    for(volatile int i=0;i<us;i++);
 }
 
 
