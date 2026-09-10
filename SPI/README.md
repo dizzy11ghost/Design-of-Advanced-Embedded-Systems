@@ -27,9 +27,21 @@ Utilizando el código de la primera parte, se realizó la implementación de un 
 https://github.com/user-attachments/assets/57e6635f-afee-48d9-ba04-7f18ae4cc40c
 
 
-### 3. Aplicación
+### 3. Aplicación - sistema de monitoreo
 *Descripción*
+Para esta parte de la práctica se desarrolló un sistema de monitoreo capaz de recibir un valor usando un ADC y que muestra en display de 7 segmentos 4 digitos. El sistema permite la configuración de un umbral usando el keypad. El led RGB indica el modo de operació, y en modo normal, indica cuando el valor medido sobrepasa el rango establecido. El sistema además mantiene registro de los valores mínimo y máximo del ADC medidos desde que el sistema empezó o desde que los min/max fueron reseteados.
+Los modos de operación fueron los siguientes (permitiendo al usuario cambiar entre ellos por medio de un botón):
+-Modo normal: el display muestra la lectura del ADC, el led se enciende cuando el valor leido es mayor o igual al umbral.
+-Modo mínimo: el display muestra el valor más bajo grabado hasta ahora y el LED usa otro color para indicar el modo mínimo.
+-Modo máximo: el display muestra el valor más alto grabado hasta ahora y el LED usa otro color para indicar el modo máximo.
+-Modo de umbral: Le permite al usuario ingresar y configurar el umbral usando el keypad.
+Al principio, los primeros datos recibidos del ADC representan tanto el valor máximo como el mínimo.
+Hay un pushbutton que sirve para resetear el máximo y mínimo, y la comparasión hacia el umbral tiene que ser actualizada periódicamente sin que se bloquee la operación y uso del keypad o de los pushbuttons.
+La implementación por lo tanto evita usar delays largos bloqueantes que le impidan al usuario interactuar con el sistema.
+
 
 *Evidencia de funcionamiento*
+https://github.com/user-attachments/assets/11b33cb0-075b-416c-ab18-9b82c3aacfd4
+
 
 
