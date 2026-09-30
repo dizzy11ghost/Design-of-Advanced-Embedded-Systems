@@ -131,8 +131,8 @@ void I2C0_init(void)
     PORTE->PCR[1] = PORT_PCR_MUX(6) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK; /* PTE1 = SCL */
     PORTE->PCR[0] = PORT_PCR_MUX(6) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK; /* PTE0 = SDA */
 
-    I2C1->F  = I2C_ICR;
-    I2C1->C1 = I2C_C0_IICEN_MASK;
+    I2C0->F  = I2C_ICR;
+    I2C0->C1 = I2C_C0_IICEN_MASK;
 }
 
 //Esperamos a que termine una transferencia, 0=ok 1= timeout
@@ -437,3 +437,4 @@ void delayUs(int n)
     while ((TPM0->SC & 0x80) == 0) { }
     TPM0->SC |= 0x80;
 }
+
