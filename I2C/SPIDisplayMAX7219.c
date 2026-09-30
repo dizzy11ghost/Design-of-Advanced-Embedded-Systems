@@ -125,14 +125,14 @@ int main(void) {
 //polling I2C0
 void I2C0_init(void)
 {
-    SIM->SCGC4 |= SIM_SCGC4_I2C1_MASK;   /* reloj del modulo I2C1 */
+    SIM->SCGC4 |= SIM_SCGC4_I2C0_MASK;   /* reloj del modulo I2C1 */
     SIM->SCGC5 |= SIM_SCGC5_PORTE_MASK;  /* reloj del puerto E */
 
     PORTE->PCR[1] = PORT_PCR_MUX(6) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK; /* PTE1 = SCL */
     PORTE->PCR[0] = PORT_PCR_MUX(6) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK; /* PTE0 = SDA */
 
     I2C1->F  = I2C_ICR;
-    I2C1->C1 = I2C_C1_IICEN_MASK;
+    I2C1->C1 = I2C_C0_IICEN_MASK;
 }
 
 //Esperamos a que termine una transferencia, 0=ok 1= timeout
