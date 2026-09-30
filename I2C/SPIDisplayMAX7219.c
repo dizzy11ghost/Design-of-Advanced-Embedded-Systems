@@ -123,16 +123,16 @@ int main(void) {
 }
 
 //polling I2C0
-void I2C0_init(void){
-	SIM->SCGC4 |= SIM_SCGC4_I2C0_MASK;/* reloj I2C0 */
-	SIM->SCGC5 |= SIM_SCGC5_PORTE_MASK;/* reloj Puerto E */
+void I2C0_init(void)
+{
+    SIM->SCGC4 |= SIM_SCGC4_I2C1_MASK;   /* reloj del modulo I2C1 */
+    SIM->SCGC5 |= SIM_SCGC5_PORTE_MASK;  /* reloj del puerto E */
 
-	/* PTE24 = SCL, PTE25 = SDA (ALT5). Pull-up interna solo como respaldo */
-	PORTE->PCR[24] = PORT_PCR_MUX(5) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK;
-	PORTE->PCR[25] = PORT_PCR_MUX(5) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK;
+    PORTE->PCR[1] = PORT_PCR_MUX(6) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK; /* PTE1 = SCL */
+    PORTE->PCR[0] = PORT_PCR_MUX(6) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK; /* PTE0 = SDA */
 
-	I2C0->F  = I2C_ICR;
-	I2C0->C1 = I2C_C1_IICEN_MASK;/* habilita modulo */
+    I2C1->F  = I2C_ICR;
+    I2C1->C1 = I2C_C1_IICEN_MASK;
 }
 
 //Esperamos a que termine una transferencia, 0=ok 1= timeout
