@@ -1,5 +1,6 @@
-//Practica de I2C parte 1
-//RTC DS3231 y LCD (del DS3231 vamos a usar SCL del DS3231 va a PTE24 y SDA a PTE25)
+//Practica de I2C parte 2
+//SPI Display with MAX7219
+
 #include <MKL25Z4.h>
 #include <stdio.h>
 
@@ -7,6 +8,13 @@
 #define RS 0x04
 #define RW 0x10
 #define EN 0x20
+
+//MAX7219
+#define DECODE    9
+#define INTENSITY 10
+#define SCANLIMIT 11
+#define SHUTDOWN  12
+#define TEST      15
 
 //I2C - DS3231
 #define DS3231_ADDR   0x68
@@ -31,6 +39,8 @@ typedef struct {
     uint8_t day, month, year;   /* year = 0..99 */
 } rtc_time_t;
 
+uint8_t day_of_week(uint8_t y, uint8_t m, uint8_t d);
+
 //prototipos de funciones
 void delayMs(int n);
 void delayUs(int n);
@@ -41,7 +51,6 @@ void LCD_data(unsigned char data);
 void LCD_string(char cadena[]);
 void LCD_goto(uint8_t row, uint8_t col);
 void LCD_2digits(uint8_t n);
-void LCD_hex8(uint8_t n);
 
 void I2C0_init(void);
 static int i2c_wait(void);
@@ -52,31 +61,37 @@ int  i2c_write_bytes(uint8_t dev, uint8_t reg, const uint8_t *buf, uint8_t n);
 int  i2c_read_bytes(uint8_t dev, uint8_t reg, uint8_t *buf, uint8_t n);
 uint8_t i2c_scan(void);
 
+void SPI0_init(void);
+void max7219_write(unsigned char command, unsigned char data);
+void max7219_init(void);
+void max7219_show_time(const rtc_time_t *t);
+
 uint8_t bcd2bin(uint8_t b);
 uint8_t bin2bcd(uint8_t b);
-uint8_t day_of_week(uint8_t y, uint8_t m, uint8_t d);
-int  rtc_set_time(const rtc_time_t *t);
-int  rtc_get_time(rtc_time_t *t);
-void show_datetime(const rtc_time_t *t);
+int rtc_set_time(const rtc_time_t *t);
+int rtc_get_time(rtc_time_t *t);
+void lcd_show_datetime(const rtc_time_t *t);
 
 // main --------------------------------------------------------
 int main(void) {
 
 	rtc_time_t now;
-	uint8_t addr, status;
+	uint8_t status;
 
 	//vamos a usar TPM0 como base del tiempo
 	SIM->SCGC6 |= 0x01000000;
-	SIM->SOPT2 |= 0x01000000;
-	TPM0->SC    = 0;
-	TPM0->SC    = 0x02;
-	TPM0->MOD   = 0x2000;
-	TPM0->SC   |= 0x80;
-	TPM0->SC   |= 0x08;
+	    SIM->SOPT2 |= 0x01000000;
+	    TPM0->SC    = 0;
+	    TPM0->SC    = 0x02;
+	    TPM0->MOD   = 0x2000;
+	    TPM0->SC   |= 0x80;
+	    TPM0->SC   |= 0x08;
 
-	//inicializamos la LCD
-	LCD_init();
-	I2C0_init();
+	    //inicializamos todooo
+	    LCD_init();
+	    I2C0_init();
+	    SPI0_init();
+	    max7219_init();
 
 	//config de fecha y hora si el RTC llega a perder energía o se fuerza
 	if (i2c_read_bytes(DS3231_ADDR, REG_STATUS, &status, 1)!= 0) status = 0x80;
@@ -100,26 +115,24 @@ int main(void) {
 	//para estar leyendo y mostrando continuamente
 	while(1){
 		if (rtc_get_time(&now) == 0){
-			show_datetime(&now);
-		} else {
-			LCD_goto(0, 0); LCD_string("RTC read error ");
-			LCD_goto(1, 0); LCD_string("                ");
-			}
+			lcd_show_datetime(&now);
+			max7219_show_time(&now);
+		}
 		delayMs(250);
 	}
 }
 
 //polling I2C0
-void I2C0_init(void){
-	SIM->SCGC4 |= SIM_SCGC4_I2C0_MASK;/* reloj I2C0 */
-	SIM->SCGC5 |= SIM_SCGC5_PORTE_MASK;/* reloj Puerto E */
+void I2C0_init(void)
+{
+    SIM->SCGC4 |= SIM_SCGC4_I2C0_MASK;   /* reloj del modulo I2C1 */
+    SIM->SCGC5 |= SIM_SCGC5_PORTE_MASK;  /* reloj del puerto E */
 
-	/* PTE24 = SCL, PTE25 = SDA (ALT5). Pull-up interna solo como respaldo */
-	PORTE->PCR[24] = PORT_PCR_MUX(5) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK;
-	PORTE->PCR[25] = PORT_PCR_MUX(5) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK;
+    PORTE->PCR[1] = PORT_PCR_MUX(6) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK; /* PTE1 = SCL */
+    PORTE->PCR[0] = PORT_PCR_MUX(6) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK; /* PTE0 = SDA */
 
-	I2C0->F  = I2C_ICR;
-	I2C0->C1 = I2C_C1_IICEN_MASK;/* habilita modulo */
+    I2C0->F  = I2C_ICR;
+    I2C0->C1 = I2C_C1_IICEN_MASK;
 }
 
 //Esperamos a que termine una transferencia, 0=ok 1= timeout
@@ -218,6 +231,67 @@ uint8_t i2c_scan(void){
 
 }
 
+//SPI0 y MAX7219
+void SPI0_init(void)
+{
+    SIM->SCGC5 |= SIM_SCGC5_PORTD_MASK;
+
+    PORTD->PCR[1] = PORT_PCR_MUX(2);   /* PTD1 -> SPI0_SCK  */
+    PORTD->PCR[2] = PORT_PCR_MUX(2);   /* PTD2 -> SPI0_MOSI */
+    PORTD->PCR[0] = PORT_PCR_MUX(1);   /* PTD0 -> GPIO: lo usamos como CS */
+
+    PTD->PDDR |= (1 << 0);             /* CS como salida */
+    PTD->PSOR  = (1 << 0);             /* CS en alto = inactivo */
+
+    SIM->SCGC4 |= SIM_SCGC4_SPI0_MASK; /* reloj del modulo SPI0 */
+
+    SPI0->C1  = SPI_C1_MSTR_MASK;      /* modo maestro (CPOL=0, CPHA=0, que es
+                                          lo que necesita el MAX7219) */
+    SPI0->BR  = 0x60;                  /* divisor de baud rate (~1-1.5 MHz) */
+    SPI0->C1 |= SPI_C1_SPE_MASK;       /* habilita el modulo SPI */
+}
+
+void max7219_write(unsigned char command, unsigned char data)
+{
+    volatile char dummy;
+
+    PTD->PCOR = (1 << 0);                          /* CS en bajo: inicia trama */
+
+    while (!(SPI0->S & SPI_S_SPTEF_MASK)) { }      /* espera buffer de TX vacio */
+    SPI0->D = command;                             /* byte 1: registro */
+    while (!(SPI0->S & SPI_S_SPRF_MASK)) { }       /* espera a que termine el byte */
+    dummy = SPI0->D;                               /* SPI recibe mientras envia;
+                                                      leer D limpia SPRF */
+
+    while (!(SPI0->S & SPI_S_SPTEF_MASK)) { }
+    SPI0->D = data;                                /* byte 2: dato */
+    while (!(SPI0->S & SPI_S_SPRF_MASK)) { }
+    dummy = SPI0->D;
+
+    PTD->PSOR = (1 << 0);                          /* CS en alto: fin de trama */
+}
+
+void max7219_init(void)
+{
+    /* Decode mode 0x0F: los digitos 0-3 usan "Code B", es decir, escribimos
+       el numero 0-9 directamente y el chip enciende los segmentos correctos. */
+    max7219_write(DECODE, 0x0F);
+    max7219_write(SCANLIMIT, 3);   /* solo escanea 4 digitos (0 a 3) */
+    max7219_write(INTENSITY, 4);   /* brillo (0 a 15) */
+    max7219_write(TEST, 0);        /* modo de prueba apagado */
+    max7219_write(SHUTDOWN, 1);    /* 1 = operacion normal (0 = apagado) */
+}
+
+void max7219_show_time(const rtc_time_t *t)
+{
+    uint8_t dp = (t->sec & 1) ? 0x80 : 0x00;   /* segundos impares -> punto encendido */
+
+    max7219_write(4, t->hour / 10);            /* decenas de hora  */
+    max7219_write(3, (t->hour % 10) | dp);     /* unidades de hora + punto */
+    max7219_write(2, t->min / 10);             /* decenas de minuto */
+    max7219_write(1, t->min % 10);             /* unidades de minuto */
+}
+
 //funciones para el DS3231 --------------------------------------
 
 uint8_t bcd2bin(uint8_t b) { return (uint8_t)((b >> 4) * 10 + (b & 0x0F)); }
@@ -256,7 +330,7 @@ int rtc_get_time(rtc_time_t *t){
 }
 
 //mostramos los datos con el formato DD/MM/YY
-void show_datetime(const rtc_time_t *t)
+void lcd_show_datetime(const rtc_time_t *t)
 {
     LCD_goto(0, 0); LCD_string("Date: ");
     LCD_2digits(t->day);   LCD_data('/');
