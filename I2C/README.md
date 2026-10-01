@@ -29,6 +29,8 @@ Evidencia de funcionamiento
 
 https://github.com/user-attachments/assets/b1d992ca-6550-4fdd-a7e3-af4735ace508
 
+## Step 6 — Complete Monitoring Station
 Evidencia de funcionamiento
 
-Evidencia de funcionamiento
+https://github.com/user-attachments/assets/87cac5a0-0aca-4773-869d-24c953a1f54e
+
