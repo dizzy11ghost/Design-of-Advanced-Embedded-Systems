@@ -360,12 +360,11 @@ uint8_t days_in_month(uint8_t m, uint8_t y)
 //polling I2C0
 void I2C0_init(void)
 {
-    SIM->SCGC4 |= SIM_SCGC4_I2C0_MASK;   /* reloj del modulo I2C1 */
-    SIM->SCGC5 |= SIM_SCGC5_PORTE_MASK;  /* reloj del puerto E */
-
-    PORTE->PCR[1] = PORT_PCR_MUX(6) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK; /* PTE1 = SCL */
-    PORTE->PCR[0] = PORT_PCR_MUX(6) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK; /* PTE0 = SDA */
-
+    SIM->SCGC4 |= SIM_SCGC4_I2C0_MASK;
+    SIM->SCGC5 |= SIM_SCGC5_PORTC_MASK;
+    PTC->PDDR &= ~((1<<8) | (1<<9));   // entradas
+    PORTC->PCR[8] = PORT_PCR_MUX(2) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK; // SCL
+    PORTC->PCR[9] = PORT_PCR_MUX(2) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK; // SDA
     I2C0->F  = I2C_ICR;
     I2C0->C1 = I2C_C1_IICEN_MASK;
 }
