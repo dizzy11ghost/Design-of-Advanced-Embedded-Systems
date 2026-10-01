@@ -9,7 +9,7 @@
 #define EN 0x20
 
 //I2C - DS3231
-#define DS3231_ADDR   0x68
+#define DS3231_ADDR   0x57
 #define REG_SECONDS   0x00
 #define REG_CONTROL   0x0E
 #define REG_STATUS    0x0F
@@ -78,6 +78,7 @@ int main(void) {
 	LCD_init();
 	I2C0_init();
 
+
 	//config de fecha y hora si el RTC llega a perder energía o se fuerza
 	if (i2c_read_bytes(DS3231_ADDR, REG_STATUS, &status, 1)!= 0) status = 0x80;
 
@@ -110,16 +111,15 @@ int main(void) {
 }
 
 //polling I2C0
-void I2C0_init(void){
-	SIM->SCGC4 |= SIM_SCGC4_I2C0_MASK;/* reloj I2C0 */
-	SIM->SCGC5 |= SIM_SCGC5_PORTE_MASK;/* reloj Puerto E */
-
-	/* PTE24 = SCL, PTE25 = SDA (ALT5). Pull-up interna solo como respaldo */
-	PORTE->PCR[24] = PORT_PCR_MUX(5) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK;
-	PORTE->PCR[25] = PORT_PCR_MUX(5) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK;
-
-	I2C0->F  = I2C_ICR;
-	I2C0->C1 = I2C_C1_IICEN_MASK;/* habilita modulo */
+void I2C0_init(void)
+{
+    SIM->SCGC4 |= SIM_SCGC4_I2C0_MASK;
+    SIM->SCGC5 |= SIM_SCGC5_PORTC_MASK;
+    PTC->PDDR &= ~((1<<8) | (1<<9));   // entradas
+    PORTC->PCR[8] = PORT_PCR_MUX(2) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK; // SCL
+    PORTC->PCR[9] = PORT_PCR_MUX(2) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK; // SDA
+    I2C0->F  = I2C_ICR;
+    I2C0->C1 = I2C_C1_IICEN_MASK;
 }
 
 //Esperamos a que termine una transferencia, 0=ok 1= timeout
